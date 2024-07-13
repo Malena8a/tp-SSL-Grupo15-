@@ -1,9 +1,7 @@
-#include <./conversion.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "tabla.h"
 
 int main(int argc, char *argv[]) {
-    if (argc < 4) {
+    if (argc < 3) {
         printf("Error: Faltan argumentos. Uso: programa inicio fin [incremento]\n");
         return 1;
     }
@@ -12,10 +10,7 @@ int main(int argc, char *argv[]) {
     int fin = atoi(argv[2]);
     int incremento = (argc == 4) ? atoi(argv[3]) : 1;
 
-    //tabla(inicio, fin, incremento);
-    printf("%d\n",inicio);
-    printf("%d\n",fin);
-    printf("%d\n",incremento);
+    tabla(inicio, fin, incremento);
 
     return 0;
 }
