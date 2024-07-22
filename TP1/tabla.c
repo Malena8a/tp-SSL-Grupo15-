@@ -4,7 +4,7 @@ conversión. Use assert para poner precondiciones sobre los valores de los pará
 recibidos.
 */
 
-#include "conversion.h"
+#include "tabla.h"
 
 void tabla(int inicio, int fin, int incremento) {
     assert(inicio >= 0 && fin >= inicio && incremento > 0);
