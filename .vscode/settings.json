@@ -1,5 +1,10 @@
 {
-	"files.associations": {
-		"stdio.h": "c"
-	}
+    "files.associations": {
+        "scanner.h": "c",
+        "stdio.h": "c",
+        "bit": "c",
+        "compare": "c",
+        "limits": "c",
+        "new": "c"
+    }
 }
