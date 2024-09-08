@@ -43,7 +43,6 @@ int main()
             case 4: // Operador
                 // Manejo de operador
                 
-                //printf("El operador que llego es %s\n",lexema->lexema);
                 if (strcmp(lexema->lexema, "+") ==0) {printf("Mas '%s'\n",lexema->lexema);}
                 if (strcmp(lexema->lexema, "-") ==0) {printf("Menos '%s'\n",lexema->lexema);}
                 if (strcmp(lexema->lexema, "*") ==0) {printf("Multiplicacion '%s'\n",lexema->lexema);} 
