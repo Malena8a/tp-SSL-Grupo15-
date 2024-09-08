@@ -17,7 +17,7 @@
 #define OTRO 15
 
 int tabla[18][16];
-int estadosTerminales[13] = {2,4,5,6,7,8,9,10,11,12,13,15,16};
+int estadosTerminales[14] = {2,4,5,6,7,8,9,10,11,12,13,15,16,17};
 
 int tipoDeCaracter(char c)
 {
@@ -35,18 +35,23 @@ int tipoDeCaracter(char c)
     if (c == ';') return PUNTO_COMA;
     if (c == ' ') return ESP;
     if (c == '=') return IGUAL;
+    if (c == EOF) return FDT;
 
     if( c == '\n')
     {
-        printf("Soy un salto de linea\n");
+        //printf("Soy un salto de linea\n");
     }
 
-    printf("llegue a este punto en el cual el caracter no es identificado\n");
-    return OTRO;  // Otros
+    //printf("llegue a este punto en el cual el caracter no es identificado\n");
+    return OTRO;  // Otros 
 }
 
 int funcionDeTransicion(int estadoActual, char c)
 {
+    if( c == '\r' || c == '\n' || c == '\t' )
+    {
+        c = ' ';
+    }
     int caracter = tipoDeCaracter(c);
     return tabla[estadoActual][caracter];
 }
@@ -65,113 +70,155 @@ bool esEstadoFinal(int estadoActual)
     return esMiembro(estadosTerminales,13,estadoActual);
 }
 
+bool tipoDeError(cod_op estadoViejo, cod_op estadoActual, char c, cod_op* tipoError)
+{
+    //Si el estado viejo es 14 y el actual no es 15, error de asignacion
+    if( estadoViejo == 14 && estadoActual != 15 )
+    {
+        *tipoError = ERROR_ASIGNACION;
+        return true;
+    }
+
+    /*
+    if( estadoViejo == 1 && estadoActual == 17 )
+    {
+        *tipoError = ERROR_COMUN;
+        return true;
+    }
+    */
+
+    if( estadoViejo == 0 && estadoActual == 17 )
+    {
+        if( c == '=' )
+        {
+            *tipoError = ERROR_ASIGNACION;
+            //printf("Error de asignacion\n");
+        }
+        else
+        {
+            *tipoError = ERROR_COMUN;
+            //printf("Error comun\n");
+        }
+        return true;
+    }
+    return false;
+}
+
 Lexema* escaner(FILE* f)
 {
-    printf("Inicio.\n");
+    //printf("Inicio.\n");
 
     //leer programa
+    bool error = false;
+    cod_op* tipoError = malloc(sizeof(cod_op));
     int estadoActual = 0;
     char* lexema = malloc(200);
-    lexema[0] = '\0';  // Asegúrate de que el buffer esté vacío al principio
-    
-    while( !esEstadoFinal(estadoActual) )
+    lexema[0] = '\0';  // buffer esté vacío al principio
+
+    while( !esEstadoFinal(estadoActual) && !error )
     {
-        //leer valor
+        // Obtenemos caracter
         char c;
         c = fgetc(f);
-        while( c == '\r' || c == '\n' || c == '\t' )
-        {
-            c = fgetc(f);
-        }
 
-        printf("lei el caracter %d\n",c);
+        // Leemos caracter y aplicamos funcion
+        //printf("lei el caracter %c\n",c);
+        int estadoViejo = estadoActual;
         estadoActual = funcionDeTransicion(estadoActual,c);
 
-        printf("El estado actual es %d\n",estadoActual);
+        // Aplicamos error
+        error = tipoDeError(estadoViejo, estadoActual, c, tipoError);
 
+        //printf("El estado actual es %d\n",estadoActual);
+        
+        //aplicamos comportamiento dependiendo del estado
+        aplicarAccionSegunEstado(f, estadoActual, c);
+
+        // Contatenamos para la devolucion
         char* ptr = malloc(sizeof(char));
         *ptr = c;
-
-        strncat(lexema,ptr,1);
+        if( !esCaracterDeEspacio(c) && estadoActual != 2 )
+        {
+            strncat(lexema,ptr,1);
+        }
+        
         free(ptr);
+
+        //printf("Llegué hasta el fin\n");
     }
+
+
+    //Devolucion
 
     Lexema* to_ret = malloc(sizeof(Lexema));
     to_ret->lexema = malloc(strlen(lexema)+1);
+    to_ret->codigo = tipoDeToken(estadoActual,*tipoError);
+    //printf("RETORNARÉ EL CODIGO %d\n", to_ret->codigo);
     strcpy(to_ret->lexema,lexema);
-    to_ret->codigo = 1;
+
+    //to_ret->codigo = 1;
+    free(lexema);
+    free(tipoError);
     return to_ret;
 }
 
-/*
-estado := INICIAL;
- while not debo_parar(estado)
-    Leer caracter
-    estado := T[estado][caracter]; // otras acciones como contar líneas Armar lexema, et
- end while;
- if aceptor(estado) then
-    if centinela(estado) then
-        unput(caracter);
-    accept(estado); // retornar token 
- else
-    error; //devolver token de error o invocar rutina de manejor de error 
- end if;
-
-*/
-
-/*
-Token get_next_token() {
-    Token token;
-    char c;
-    int column;
-
-    // Inicializa el token
-    token.type = TOKEN_ERROR;
-    token.lexema[0] = '\0';
-
-    // Leer carácter
-    c = getchar();
-    if (c == EOF) {
-        token.type = TOKEN_FDT;
-        return token;
+cod_op tipoDeToken(int estado, cod_op tipoDeError)
+{
+    if( tipoDeError == ERROR_COMUN)
+    {
+        //printf("We are gonna send a ERROR_COMUN\n");
+        return 6;
+    }
+    else
+    {
+        if( tipoDeError == ERROR_ASIGNACION )
+        {
+            //printf("We are gonna send a ERROR_ASIGNACION\n");
+            return 7;
+        }    
     }
 
-    column = get_column_index(c);
-    current_state = transition_table[current_state][column];
-
-    // Manejo del token
-    switch (current_state) {
-        case 0: // Estado inicial
-            break;
-        case 1: // Identificador
-            // Manejo de identificador
-            break;
-        case 2: // Constante
-            // Manejo de constante
-            break;
-        case 3: // Palabra reservada
-            // Manejo de palabra reservada
-            break;
-        case 4: // Operador
-            // Manejo de operador
-            break;
-        case 5: // Asignación
-            // Manejo de asignación
-            break;
-        case 6: // Carácter de puntuación
-            // Manejo de carácter de puntuación
-            break;
-        case 7: // Comentario
-            // Manejo de comentario
-            break;
-        case 8: // Error
-            // Manejo de error
-            break;
+    if( estado == 2)//identificador
+    {
+        return 1;
     }
-
-    return token;
+    else if(estado == 4) //Constante
+    {
+        return 2;
+    }
+    else if( estado == 5 || estado == 6 ||  estado == 7 || estado == 8 || estado == 9) //operador
+    {
+        return 4;
+    }
+    else if ( estado == 10 || estado == 11 ||  estado == 12 || estado == 13) //puntuacion
+    {
+        return 3;
+    }
+    else if ( estado ==15) //asignación
+    {
+        return 5;
+    }
+    else if( estado == 16) //fdt
+    {
+        return 0;
+    }
+    
 }
-*/
+
+
+
+void aplicarAccionSegunEstado(FILE* f, int estadoActual, char c)
+{
+    if( estadoActual == 2 )
+    {
+        ungetc(c,f);
+    }
+}
+
+bool esCaracterDeEspacio(char c)
+{
+    return (c == '\n' || c == '\r' || c == '\t' || c == ' ');
+}
 
 
 void crearTabla()
